@@ -1,6 +1,13 @@
 "use server"
 import { v4 as uuidv4 } from "uuid"
 import * as jose from "jose"
+import type {
+    Answers,
+    MaskFitResponse,
+    PatientLookup,
+    Question,
+    SubmitAnswersResult
+} from "~/types/maskfit"
 
 /**
  * See an example of authenticating with Maskfit AR API
@@ -9,16 +16,15 @@ import * as jose from "jose"
  * Please ensure your API secret is not exposed to client/browser.
  *
  * */
-const MIFIT_API_URL = `http://mifit.local/api`
+const MIFIT_API_URL = `${process.env.MASKFIT_AR_API_URL}/api`
 const MIFIT_API_AUTH_URL = `${MIFIT_API_URL}/auth/`
 const MIFIT_API_PATIENT_SCAN_LINK_URL = `${MIFIT_API_URL}/patients/scans/generate-link/`
 
 export async function mifitAuth() {
-    // Best is to use ENVIRONMENT Variable as such: MASKFIT_AR_API_KEY, MASKFIT_AR_API_SECRET
-    // PLEASE NO NOT EXPOSE. SERVER SIDE ONLY
-    // const api_secret = process.env.MASKFIT_AR_API_SECRET
-    const api_key = "your_api_key"
-    const api_secret = "your_api_secret" // PLEASE NO NOT EXPOSE. SERVER SIDE ONLY
+    // Configured through environment variables, see .env.example
+    // PLEASE DO NOT EXPOSE. SERVER SIDE ONLY
+    const api_key = process.env.MASKFIT_AR_API_KEY!
+    const api_secret = process.env.MASKFIT_AR_API_SECRET! // PLEASE DO NOT EXPOSE. SERVER SIDE ONLY
 
     const nonce = uuidv4()
 
@@ -78,4 +84,59 @@ export async function getScanLink({
     })
     const json_data = await req.json()
     return json_data.data
+}
+
+/**
+ * Questionnaire API
+ *
+ * Render a patient's questionnaire in your own UI and submit the answers
+ * back
+ *
+ * The patient is identified by ONE of email, phone or external_id.
+ *
+ * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions
+ * */
+const MIFIT_API_QUESTIONS_URL = `${MIFIT_API_URL}/questions/`
+
+/**
+ * List the questions available to your institution together with the
+ * patient's existing answers.
+ *
+ * GET /api/questions/?email=... | ?phone=... | ?external_id=...
+ * */
+export async function listQuestions(lookup: PatientLookup): Promise<MaskFitResponse<Question[]>> {
+    const auth = await mifitAuth()
+    const headers = { Authorization: `Bearer ${auth.access_token}` }
+
+    const params = new URLSearchParams(lookup as Record<string, string>)
+    const req = await fetch(`${MIFIT_API_QUESTIONS_URL}?${params}`, { method: "GET", headers })
+    return req.json()
+}
+
+/**
+ * Submit or update a patient's answers.
+ *
+ * PATCH /api/questions/  { email | phone | external_id, answers: { [questionId]: value } }
+ *
+ * "answers" maps question id -> value: the option id for radio questions,
+ * the raw string for everything else. Only the questions included are
+ * touched (partial update); send "" to clear an answer. Unknown question ids
+ * or option ids are reported in "data.skipped_question_ids".
+ * */
+export async function submitAnswers(
+    lookup: PatientLookup,
+    answers: Answers
+): Promise<MaskFitResponse<SubmitAnswersResult>> {
+    const auth = await mifitAuth()
+    const headers = {
+        Authorization: `Bearer ${auth.access_token}`,
+        "Content-Type": "application/json"
+    }
+
+    const req = await fetch(MIFIT_API_QUESTIONS_URL, {
+        method: "PATCH",
+        body: JSON.stringify({ ...lookup, answers }),
+        headers
+    })
+    return req.json()
 }

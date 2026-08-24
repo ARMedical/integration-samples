@@ -25,6 +25,21 @@ export default function Home() {
                         </Button>
                     </Card.Footer>
                 </Card.Root>
+                <Card.Root width="320px">
+                    <Card.Body gap="2">
+                        <Card.Title mt="2">Questionnaire</Card.Title>
+                        <Card.Description>
+                            Please follow the link to see how to fetch a patient&apos;s
+                            questionnaire, render it with your own components and submit the answers
+                            back through the MaskFit AR Questionnaire API.
+                        </Card.Description>
+                    </Card.Body>
+                    <Card.Footer justifyContent="stretch">
+                        <Button colorPalette={"blue"} variant="solid" asChild>
+                            <Link href={"/questionnaire"}>See Questionnaire Example.</Link>
+                        </Button>
+                    </Card.Footer>
+                </Card.Root>
             </Stack>
         </Container>
     )
