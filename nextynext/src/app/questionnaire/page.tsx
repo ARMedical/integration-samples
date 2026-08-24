@@ -15,7 +15,7 @@ import { QuestionnaireForm } from "./components/QuestionnaireForm"
  * Questionnaire example.
  *
  * Render a patient's MaskFit questionnaire in your own UI and push the answers
- * back — no MaskFit-hosted page, no redirects. Both calls go through server
+ * back. Both calls go through server
  * actions (see ~/actions) so the API credential stays on the server.
  *
  *   1. listQuestions({ email | phone | external_id })  -> questions + existing answers
