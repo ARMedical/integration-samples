@@ -1,17 +1,16 @@
-import Image from "next/image"
-import { Box, Button, Card, Container, Heading, Link, Stack, Text } from "@chakra-ui/react"
+import { Button, Card, Container, Heading, Link, Stack, Text } from "@chakra-ui/react"
 
 export default function Home() {
     return (
         <Container>
-            <Heading>MaskFit AR NextJS Integration Code Sample.</Heading>
-            <Box>
-                <Heading>Scan Init Example</Heading>
-                <Text></Text>
-            </Box>
+            <Heading>MaskFit AR NextJS Integration Code Samples</Heading>
+            <Text color="fg.muted" mt={2}>
+                Each example is a page under <code>src/app</code>; the MaskFit API calls are server
+                actions in <code>src/actions</code>.
+            </Text>
 
-            <Stack>
-                <Card.Root width="320px">
+            <Stack direction={{ base: "column", md: "row" }} gap={4} mt={6} align="stretch">
+                <Card.Root flex={1}>
                     <Card.Body gap="2">
                         <Card.Title mt="2">Acquring Face Scan Link</Card.Title>
                         <Card.Description>
@@ -25,7 +24,7 @@ export default function Home() {
                         </Button>
                     </Card.Footer>
                 </Card.Root>
-                <Card.Root width="320px">
+                <Card.Root flex={1}>
                     <Card.Body gap="2">
                         <Card.Title mt="2">Questionnaire</Card.Title>
                         <Card.Description>
