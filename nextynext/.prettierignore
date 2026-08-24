@@ -1,0 +1,4 @@
+src/app/(demo)/demo/3dPreview/assets/wasm/**
+next-env.d.ts
+.next
+node_modules
