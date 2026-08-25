@@ -103,6 +103,8 @@ const MIFIT_API_QUESTIONS_URL = `${MIFIT_API_URL}/questions/`
  * patient's existing answers.
  *
  * GET /api/questions/?email=... | ?phone=... | ?external_id=...
+ *
+ * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/List%20Questionnaire%20Questions
  * */
 export async function listQuestions(lookup: PatientLookup): Promise<MaskFitResponse<Question[]>> {
     const auth = await mifitAuth()
@@ -122,6 +124,8 @@ export async function listQuestions(lookup: PatientLookup): Promise<MaskFitRespo
  * the raw string for everything else. Only the questions included are
  * touched (partial update); send "" to clear an answer. Unknown question ids
  * or option ids are reported in "data.skipped_question_ids".
+ *
+ * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/Submit%20Questionnaire%20Answers
  * */
 export async function submitAnswers(
     lookup: PatientLookup,
