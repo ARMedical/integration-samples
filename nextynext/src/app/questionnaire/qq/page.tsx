@@ -66,6 +66,7 @@ export default function QQ() {
                             type={"email"}
                             name={"email"}
                             value={formFields.email ?? ""}
+                            autoComplete="off"
                             onChange={setValue}
                             placeholder="Patient Email"
                         />
@@ -77,6 +78,7 @@ export default function QQ() {
                             type={"text"}
                             name={"phone"}
                             value={formFields.phone ?? ""}
+                            autoComplete="off"
                             onChange={setValue}
                             placeholder="Patient Phone"
                         />
@@ -90,6 +92,7 @@ export default function QQ() {
                             type={"text"}
                             name={"external_id"}
                             value={formFields.external_id ?? ""}
+                            autoComplete="off"
                             onChange={setValue}
                             placeholder="Patient External ID"
                         />
