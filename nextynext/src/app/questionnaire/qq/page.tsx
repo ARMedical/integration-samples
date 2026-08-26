@@ -20,7 +20,7 @@ import type { Answers, PatientLookup, Question } from "~/types/maskfit"
 
 export default function QQ() {
     const [formFields, setFormFields] = useState<PatientLookup>({
-        email: "hellopatientmifit@mailinator.com",
+        email: "",
         phone: "",
         external_id: ""
     })
@@ -65,9 +65,9 @@ export default function QQ() {
                         <Input
                             type={"email"}
                             name={"email"}
+                            value={formFields.email ?? ""}
                             onChange={setValue}
                             placeholder="Patient Email"
-                            defaultValue={"hellopatientmifit@mailinator.com"}
                         />
                     </Field.Root>
 
@@ -76,6 +76,7 @@ export default function QQ() {
                         <Input
                             type={"text"}
                             name={"phone"}
+                            value={formFields.phone ?? ""}
                             onChange={setValue}
                             placeholder="Patient Phone"
                         />
@@ -88,6 +89,7 @@ export default function QQ() {
                         <Input
                             type={"text"}
                             name={"external_id"}
+                            value={formFields.external_id ?? ""}
                             onChange={setValue}
                             placeholder="Patient External ID"
                         />
