@@ -130,10 +130,7 @@ export async function listQuestions(lookup: PatientLookup): Promise<MaskFitRespo
  *
  * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/Submit%20Questionnaire%20Answers
  * */
-export async function submitAnswers(
-    lookup: PatientLookup,
-    answers: Answers
-): Promise<MaskFitResponse<SubmitAnswersResult>> {
+export async function submitAnswers({ ...payload }): Promise<MaskFitResponse<SubmitAnswersResult>> {
     const auth = await mifitAuth()
     const headers = {
         Authorization: `Bearer ${auth.access_token}`,
@@ -142,8 +139,49 @@ export async function submitAnswers(
 
     const req = await fetch(MIFIT_API_QUESTIONS_URL, {
         method: "PATCH",
-        body: JSON.stringify({ ...lookup, answers }),
+        body: JSON.stringify(payload),
         headers
     })
-    return req.json()
+    const { status, error, data } = await req.json()
+    if (!status) throw new Error(error!)
+    return data
+}
+
+/**
+ * Fetch the questions of the patient identified by the provided details.
+ * Identifiers:
+ * * email
+ * * phone
+ * * external_id
+ *
+ * REF: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/List Questionnaire Questions
+ * */
+export async function getMaskFitQuestions({ ...patientDetails }) {
+    const auth = await mifitAuth()
+    const headers = {
+        Authorization: `Bearer ${auth.access_token}`,
+        "Content-Type": "application/json"
+    }
+    const url = new URL(MIFIT_API_QUESTIONS_URL)
+    const payload = {}
+    for (const [key, value] of Object.entries(patientDetails)) {
+        if (!!value) {
+            payload[key] = value
+        }
+    }
+
+    const searchParams = new URLSearchParams(payload)
+
+    for (const [key, value] of searchParams.entries()) {
+        url.searchParams.append(key, value)
+    }
+    console.log("URL", url.toString())
+    const req = await fetch(url.toString(), {
+        headers
+    })
+    const resJson = await req.json()
+    console.log("RES", resJson)
+    const { status, error, data } = resJson
+    if (!status) throw new Error(error!)
+    return data
 }
