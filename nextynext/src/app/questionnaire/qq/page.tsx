@@ -16,18 +16,18 @@ import { ChangeEvent, useState } from "react"
 import { getMaskFitQuestions, submitAnswers } from "~/actions"
 
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020"
-import type { Question } from "~/types/maskfit"
+import type { Answers, PatientLookup, Question } from "~/types/maskfit"
 
 export default function QQ() {
-    const [formFields, setFormFields] = useState({
+    const [formFields, setFormFields] = useState<PatientLookup>({
         email: "hellopatientmifit@mailinator.com",
-        phone: null,
-        external_id: null
+        phone: "",
+        external_id: ""
     })
     const [isLoading, setIsLoading] = useState(false)
     const [getListError, setGetListError] = useState<null | string>(null)
 
-    const [questions, setQuestions] = useState([])
+    const [questions, setQuestions] = useState<Question[]>([])
 
     const setValue = (e: ChangeEvent<HTMLInputElement>) => {
         const target = e.target.name
@@ -35,18 +35,15 @@ export default function QQ() {
 
         setFormFields({ ...formFields, ...{ [target]: value } })
     }
-    console.log("UPDATED", formFields)
 
     const fetchQuestions = async () => {
         setIsLoading(true)
         setGetListError(null)
+        setQuestions([])
         getMaskFitQuestions(formFields)
-            .then((r) => {
-                console.log("RECEVEIVVECV", r)
-                setQuestions(r)
-            })
-            .finally(() => setIsLoading(false))
+            .then((r) => setQuestions(r))
             .catch((e) => setGetListError(e.message))
+            .finally(() => setIsLoading(false))
     }
     return (
         <Container>
@@ -106,6 +103,12 @@ export default function QQ() {
     )
 }
 
+// Some questions are conditional: they are only visible (and therefore required)
+// depending on another question's answer. Both 'visibility_rule' and
+// 'validation_rule' are JSON Schema, so one validator (`ajv`) handles both.
+// REF: GitHub: https://github.com/ajv-validator/ajv
+// REF: NPM Registry https://www.npmjs.com/package/ajv
+//
 // coerceTypes lets "5" satisfy { type: "number" } — the API transports every answer as a string.
 const ajv = new Ajv2020({ strict: false, coerceTypes: true, allErrors: true })
 const cache = new Map<string, ValidateFunction>()
@@ -119,6 +122,13 @@ function compile(key: string, schema: Record<string, unknown>): ValidateFunction
     return fn
 }
 
+/** A question is visible when the current answers satisfy its visibility_rule (or it has none). */
+export function isVisible(question: Question, answers: Answers): boolean {
+    if (!question.visibility_rule || Object.keys(question.visibility_rule).length === 0) return true
+    return compile(`vis:${question.id}`, question.visibility_rule)({ ...answers })
+}
+
+/** Returns an error message for the value, or null when it is valid. */
 export function validateAnswer(question: Question, value: string | undefined): string | null {
     const empty = value === undefined || value.trim() === ""
     if (empty) return question.required ? "This question is required." : null
@@ -133,31 +143,47 @@ export function validateAnswer(question: Question, value: string | undefined): s
     return ajv.errorsText(validate.errors, { dataVar: "value" })
 }
 
-function QuestionList({ questions = [], ...patientDetails }) {
-    const [answers, setAnswers] = useState({})
+/** The answers as MaskFit currently has them, overlaid with what the user changed on this page. */
+function currentAnswers(questions: Question[], answers: Answers): Answers {
+    const current: Answers = {}
+    for (const q of questions) if (q.answer != null) current[q.id] = q.answer
+    return { ...current, ...answers }
+}
+
+function QuestionList({
+    questions = [],
+    ...patientDetails
+}: { questions: Question[] } & PatientLookup) {
+    // Only the answers changed on this page — the API merges them with what it already has.
+    const [answers, setAnswers] = useState<Answers>({})
+    const [errors, setErrors] = useState<Record<string, string>>({})
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<null | string>(null)
+    const [saved, setSaved] = useState(false)
+
+    const current = currentAnswers(questions, answers)
+    const visibleQuestions = questions.filter((q) => isVisible(q, current))
 
     const saveAnswers = async () => {
-        setIsLoading(true)
         setError(null)
-        // validate answers with JSON Rules
-        // Some questions are conditional in the sense that they are only visible or required depending on another question's answer
-        // We use JSONRules to incorporate that functionality in a standardized way
-        // `ajv` library allows to create and validate those rules.
-        // REF: GitHub: https://github.com/ajv-validator/ajv
-        // REF: NPM Registry https://www.npmjs.com/package/ajv
-        // @Zaeem show how to do the validation.
+        setSaved(false)
 
-        submitAnswers({ answers, ...{ email: "hellopatientmifit@mailinator.com" } })
-            .then((r) => {
-                console.log("SUBMITTES RES", r)
-            })
-            .finally(() => setIsLoading(false))
+        // Validate every visible question against its JSON Schema rules before submitting.
+        const nextErrors: Record<string, string> = {}
+        for (const q of visibleQuestions) {
+            const message = validateAnswer(q, current[q.id])
+            if (message) nextErrors[q.id] = message
+        }
+        setErrors(nextErrors)
+        if (Object.keys(nextErrors).length > 0) return
+
+        setIsLoading(true)
+        submitAnswers({ answers, ...patientDetails })
+            .then(() => setSaved(true))
             .catch((e) => setError(e.message))
+            .finally(() => setIsLoading(false))
     }
 
-    console.log("ANSWERS", answers)
     return (
         <Stack gap={5}>
             <Box>
@@ -167,19 +193,24 @@ function QuestionList({ questions = [], ...patientDetails }) {
                         <Alert.Description>{error}</Alert.Description>
                     </Alert.Root>
                 )}
+                {saved && (
+                    <Alert.Root status={"success"}>
+                        <Alert.Description>Answers updated successfully.</Alert.Description>
+                    </Alert.Root>
+                )}
             </Box>
-            {questions.map((q) => {
-                return (
-                    <>
-                        <QuestionItem
-                            key={q.id}
-                            answers={answers}
-                            question={q}
-                            onChange={setAnswers}
-                        />
-                    </>
-                )
-            })}
+            {visibleQuestions.map((q) => (
+                <QuestionItem
+                    key={q.id}
+                    answers={answers}
+                    question={q}
+                    error={errors[q.id]}
+                    onChange={(next) => {
+                        setAnswers(next)
+                        setSaved(false)
+                    }}
+                />
+            ))}
             <Button disabled={isLoading} loading={isLoading} onClick={saveAnswers}>
                 Submit Answers
             </Button>
@@ -187,47 +218,56 @@ function QuestionList({ questions = [], ...patientDetails }) {
     )
 }
 
-function QuestionItem({ question = {}, answers, onChange }) {
+function QuestionItem({
+    question,
+    answers,
+    error,
+    onChange
+}: {
+    question: Question
+    answers: Answers
+    error?: string
+    onChange: (answers: Answers) => void
+}) {
+    const isRadio = ["radio", "enum"].includes(question.question_type ?? "")
     return (
-        <Field.Root>
-            <Field.Label>{question.name}</Field.Label>
+        <Field.Root invalid={!!error} required={question.required}>
+            <Field.Label>
+                {question.name}
+                <Field.RequiredIndicator />
+            </Field.Label>
             {/* If it is a single choice question, present it as a radio */}
-            {["radio", "enum"].includes(question.question_type) && (
-                <>
-                    <HStack gap={4} wrap="wrap">
-                        <RadioGroup.Root
-                            onValueChange={(e) =>
-                                onChange({ ...answers, ...{ [question.id]: e.value } })
-                            }
-                            value={answers?.[question.id] || question.answer || null}
-                        >
-                            <HStack gap={4} wrap="wrap">
-                                {question.options.map((opt) => (
-                                    <RadioGroup.Item key={opt.id} value={opt.id}>
-                                        <RadioGroup.ItemHiddenInput />
-                                        <RadioGroup.ItemIndicator />
-                                        <RadioGroup.ItemText>{opt.name}</RadioGroup.ItemText>
-                                    </RadioGroup.Item>
-                                ))}
-                            </HStack>
-                        </RadioGroup.Root>
-                    </HStack>
-                </>
+            {isRadio && (
+                <HStack gap={4} wrap="wrap">
+                    <RadioGroup.Root
+                        onValueChange={(e) =>
+                            onChange({ ...answers, ...{ [question.id]: e.value ?? "" } })
+                        }
+                        value={answers?.[question.id] || question.answer || null}
+                    >
+                        <HStack gap={4} wrap="wrap">
+                            {question.options.map((opt) => (
+                                <RadioGroup.Item key={opt.id} value={opt.id}>
+                                    <RadioGroup.ItemHiddenInput />
+                                    <RadioGroup.ItemIndicator />
+                                    <RadioGroup.ItemText>{opt.name}</RadioGroup.ItemText>
+                                </RadioGroup.Item>
+                            ))}
+                        </HStack>
+                    </RadioGroup.Root>
+                </HStack>
             )}
             {/* If it is a user provided input question where the user needs to type the answer, present it as a text */}
-            {!["radio", "enum"].includes(question.question_type) && (
-                <>
-                    <Input
-                        type={"text"}
-                        name={question.id}
-                        onChange={(e) =>
-                            onChange({ ...answers, ...{ [question.id]: e.target.value } })
-                        }
-                        defaultValue={question.answer}
-                        placeholder={question.name}
-                    />
-                </>
+            {!isRadio && (
+                <Input
+                    type={"text"}
+                    name={question.id}
+                    onChange={(e) => onChange({ ...answers, ...{ [question.id]: e.target.value } })}
+                    defaultValue={question.answer ?? undefined}
+                    placeholder={question.name ?? undefined}
+                />
             )}
+            <Field.ErrorText>{error}</Field.ErrorText>
         </Field.Root>
     )
 }

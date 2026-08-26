@@ -47,8 +47,5 @@ export interface Question {
 /** question id -> answer value (option id for radio questions, string otherwise) */
 export type Answers = Record<string, string>
 
-export interface SubmitAnswersResult {
-    message: string
-    /** Ids that were unknown or had an invalid option id. Only present when non-empty. */
-    skipped_question_ids?: string[]
-}
+/** Submitting answers returns an empty 'data' object on success. */
+export type SubmitAnswersResult = Record<string, never>

@@ -52,15 +52,12 @@ export default function QuestionnaireSample() {
         setIsSubmitting(true)
         setError(null)
         try {
-            const res = await submitAnswers(lookup, answers)
-            if (!res.status) {
-                setError(`${res.error} (${res.error_code})`)
-                return null
-            }
+            // submitAnswers throws with the API's error message when status is false.
+            const result = await submitAnswers({ ...lookup, answers })
             // Re-fetch so the form reflects exactly what MaskFit stored.
             const refreshed = await listQuestions(lookup)
             if (refreshed.status) setQuestions(refreshed.data)
-            return res.data
+            return result
         } catch (e) {
             setError((e as Error).message)
             return null

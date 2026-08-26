@@ -63,46 +63,6 @@ export const listQuestionsSuccess: MaskFitResponse<Question[]> = {
             }
         },
         {
-            id: "28876801-a47c-47c6-a332-e397b299a25c",
-            slug: "email",
-            name: "Email",
-            question_type: "text",
-            input_type: "email",
-            required: false,
-            options: [],
-            position: 3,
-            visibility_rule: {},
-            validation_rule: {
-                type: "string",
-                pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
-            },
-            answer: "testpatient@test.com",
-            category: {
-                name: "Demographics",
-                position: 1
-            }
-        },
-        {
-            id: "48b73a72-2fa5-40fd-bf60-dd854f59d02d",
-            slug: "phone",
-            name: "Phone",
-            question_type: "text",
-            input_type: "phone",
-            required: false,
-            options: [],
-            position: 4,
-            visibility_rule: {},
-            validation_rule: {
-                type: "string",
-                pattern: "^\\+?[0-9]{10,15}$"
-            },
-            answer: "+17804673727",
-            category: {
-                name: "Demographics",
-                position: 1
-            }
-        },
-        {
             id: "9ebdc3de-def3-41c2-ba54-dce248891b72",
             slug: "gender",
             name: "Gender",
@@ -446,30 +406,13 @@ export const accessTokenExpired = {
 // { "email": "testpatient@test.com", "answers": { "<question id>": "<value>" } }
 // ---------------------------------------------------------------------------
 
-/** 200 — all answers saved. */
+/** 200 — all answers saved. 'data' is always an empty object. */
 export const submitAnswersSuccess: MaskFitResponse<SubmitAnswersResult> = {
     status: true,
     error: null,
     error_code: null,
     warning: null,
-    data: {
-        message: "Answers updated successfully."
-    }
-}
-
-/**
- * 200 — still a success: the recognised answers were saved, but the ids listed
- * in skipped_question_ids were unknown question ids or invalid option ids.
- */
-export const submitAnswersPartiallySkipped: MaskFitResponse<SubmitAnswersResult> = {
-    status: true,
-    error: null,
-    error_code: null,
-    warning: null,
-    data: {
-        message: "Answers updated successfully.",
-        skipped_question_ids: ["00000000-0000-4000-8000-000000000000"]
-    }
+    data: {}
 }
 
 /** 400 — a demographic phone answer was not a valid phone number. */

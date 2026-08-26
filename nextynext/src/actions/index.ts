@@ -94,6 +94,10 @@ export async function getScanLink({
  *
  * The patient is identified by ONE of email, phone or external_id.
  *
+ * Both actions return the 'data' of the MaskFit response envelope
+ * { status, error, error_code, data } and throw an Error with the API's
+ * 'error' message when 'status' is false (e.g. when the patient does not exist).
+ *
  * Sample success and error responses for both endpoints are in
  * src/samples/questionnaire.ts.
  *
@@ -103,7 +107,7 @@ const MIFIT_API_QUESTIONS_URL = `${MIFIT_API_URL}/questions/`
 
 /**
  * List the questions available to your institution together with the
- * patient's existing answers.
+ * patient's existing answers. Returns the full response envelope.
  *
  * GET /api/questions/?email=... | ?phone=... | ?external_id=...
  *
@@ -126,11 +130,13 @@ export async function listQuestions(lookup: PatientLookup): Promise<MaskFitRespo
  * "answers" maps question id -> value: the option id for radio questions,
  * the raw string for everything else. Only the questions included are
  * touched (partial update); send "" to clear an answer. Unknown question ids
- * or option ids are reported in "data.skipped_question_ids".
+ * or option ids are ignored; the remaining answers are still saved.
  *
  * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/Submit%20Questionnaire%20Answers
  * */
-export async function submitAnswers({ ...payload }): Promise<MaskFitResponse<SubmitAnswersResult>> {
+export async function submitAnswers({
+    ...payload
+}: PatientLookup & { answers: Answers }): Promise<SubmitAnswersResult> {
     const auth = await mifitAuth()
     const headers = {
         Authorization: `Bearer ${auth.access_token}`,
@@ -154,16 +160,18 @@ export async function submitAnswers({ ...payload }): Promise<MaskFitResponse<Sub
  * * phone
  * * external_id
  *
- * REF: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/List Questionnaire Questions
+ * REF: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/List%20Questionnaire%20Questions
  * */
-export async function getMaskFitQuestions({ ...patientDetails }) {
+export async function getMaskFitQuestions({
+    ...patientDetails
+}: PatientLookup): Promise<Question[]> {
     const auth = await mifitAuth()
     const headers = {
         Authorization: `Bearer ${auth.access_token}`,
         "Content-Type": "application/json"
     }
     const url = new URL(MIFIT_API_QUESTIONS_URL)
-    const payload = {}
+    const payload: Record<string, string> = {}
     for (const [key, value] of Object.entries(patientDetails)) {
         if (!!value) {
             payload[key] = value
@@ -175,13 +183,10 @@ export async function getMaskFitQuestions({ ...patientDetails }) {
     for (const [key, value] of searchParams.entries()) {
         url.searchParams.append(key, value)
     }
-    console.log("URL", url.toString())
     const req = await fetch(url.toString(), {
         headers
     })
-    const resJson = await req.json()
-    console.log("RES", resJson)
-    const { status, error, data } = resJson
+    const { status, error, data } = await req.json()
     if (!status) throw new Error(error!)
     return data
 }

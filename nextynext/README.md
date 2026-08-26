@@ -45,21 +45,21 @@ MASKFIT_AR_API_KEY=your_api_key
 MASKFIT_AR_API_SECRET=your_api_secret
 ```
 
-| Page | What it shows |
-| --- | --- |
-| `/scan` | Authenticate, request a face-scan link for a patient and send them to the MaskFit-hosted scan page |
+| Page             | What it shows                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| `/scan`          | Authenticate, request a face-scan link for a patient and send them to the MaskFit-hosted scan page |
 | `/questionnaire` | Fetch a patient's questionnaire, render it in your own UI and submit answers back (no hosted page) |
 
 All MaskFit API calls are server actions in `src/actions/index.ts`.
 
 ### Questionnaire example
 
-`listQuestions(lookup)` → `GET /api/questions/` returns every question available to your institution with the patient's existing `answer`. `lookup` is one of `email`, `phone` or `external_id` (your own identifier) — the patient must already exist in MaskFit.
+`getMaskFitQuestions(patientDetails)` → `GET /api/questions/` returns every question available to your institution with the patient's existing `answer`. `patientDetails` holds one of `email`, `phone` or `external_id` (your own identifier) — the patient must already exist in MaskFit.
 
-Each question carries what you need to render it: `question_type` (`radio` with `options`, or `text`), `input_type` (widget hint: `enum`, `number`, `email`, `phone`, `date`, `year`, …), `required`, a JSON Schema `validation_rule`, a JSON Schema `visibility_rule` evaluated against the answers object (`{}` = always visible), and `category` / `position` for grouping and ordering. `src/lib/questionnaire.ts` shows grouping, visibility and validation using [Ajv](https://ajv.js.org/).
+Each question carries what you need to render it: `question_type` (`radio` with `options`, or `text`), `input_type` (widget hint: `enum`, `number`, `email`, `phone`, `date`, `year`, …), `required`, a JSON Schema `validation_rule`, a JSON Schema `visibility_rule` evaluated against the answers object (`{}` = always visible), and `category` / `position` for grouping and ordering. The questionnaire page shows visibility and validation using [Ajv](https://ajv.js.org/).
 
-`submitAnswers(lookup, answers)` → `PATCH /api/questions/` with `answers: { [questionId]: value }` — the option id for radio questions, a string otherwise. Only the questions included are updated (send `""` to clear one); unknown ids come back in `data.skipped_question_ids`.
+`submitAnswers({ ...patientDetails, answers })` → `PATCH /api/questions/` with `answers: { [questionId]: value }` — the option id for radio questions, a string otherwise. Only the questions included are updated (send `""` to clear one); unknown question or option ids are ignored and the rest are still saved. On success `data` is an empty object.
 
-Every response uses the envelope `{ status, error, error_code, data }`; the actions return it unchanged so the UI can display `error` (e.g. `ENTITY_NOT_FOUND` when no patient matches).
+Every response uses the envelope `{ status, error, error_code, data }`; the actions return `data` and throw an `Error` carrying the API's `error` message when `status` is false (e.g. when no patient matches), so the UI can simply catch and display it.
 
 Real success **and error** responses for both endpoints are in [`src/samples/questionnaire.ts`](src/samples/questionnaire.ts) — useful for seeing the exact shapes, and for building or testing your UI before you have credentials.

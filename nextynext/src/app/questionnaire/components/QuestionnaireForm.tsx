@@ -103,14 +103,7 @@ export function QuestionnaireForm({ questions, isSubmitting, onSubmit }: Props) 
             {result && (
                 <Alert.Root status="success">
                     <Alert.Indicator />
-                    <Alert.Content>
-                        <Alert.Title>{result.message}</Alert.Title>
-                        {result.skipped_question_ids?.length ? (
-                            <Alert.Description>
-                                Skipped question ids: {result.skipped_question_ids.join(", ")}
-                            </Alert.Description>
-                        ) : null}
-                    </Alert.Content>
+                    <Alert.Title>Answers updated successfully.</Alert.Title>
                 </Alert.Root>
             )}
 
