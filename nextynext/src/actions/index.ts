@@ -94,6 +94,9 @@ export async function getScanLink({
  *
  * The patient is identified by ONE of email, phone or external_id.
  *
+ * Sample success and error responses for both endpoints are in
+ * src/samples/questionnaire.ts.
+ *
  * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions
  * */
 const MIFIT_API_QUESTIONS_URL = `${MIFIT_API_URL}/questions/`

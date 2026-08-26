@@ -10,6 +10,8 @@ export interface MaskFitResponse<T> {
     error: string | null
     /** Stable, machine-readable code when status is false (e.g. ENTITY_NOT_FOUND) */
     error_code: string | null
+    /** Non-fatal notice, usually null */
+    warning?: string | null
     data: T
 }
 

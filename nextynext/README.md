@@ -61,3 +61,5 @@ Each question carries what you need to render it: `question_type` (`radio` with 
 `submitAnswers(lookup, answers)` → `PATCH /api/questions/` with `answers: { [questionId]: value }` — the option id for radio questions, a string otherwise. Only the questions included are updated (send `""` to clear one); unknown ids come back in `data.skipped_question_ids`.
 
 Every response uses the envelope `{ status, error, error_code, data }`; the actions return it unchanged so the UI can display `error` (e.g. `ENTITY_NOT_FOUND` when no patient matches).
+
+Real success **and error** responses for both endpoints are in [`src/samples/questionnaire.ts`](src/samples/questionnaire.ts) — useful for seeing the exact shapes, and for building or testing your UI before you have credentials.
