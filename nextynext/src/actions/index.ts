@@ -1,13 +1,7 @@
 "use server"
 import { v4 as uuidv4 } from "uuid"
 import * as jose from "jose"
-import type {
-    Answers,
-    MaskFitResponse,
-    PatientLookup,
-    Question,
-    SubmitAnswersResult
-} from "~/types/maskfit"
+import type { Answers, PatientLookup, Question, SubmitAnswersResult } from "~/types/maskfit"
 
 /**
  * See an example of authenticating with Maskfit AR API
@@ -104,23 +98,6 @@ export async function getScanLink({
  * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions
  * */
 const MIFIT_API_QUESTIONS_URL = `${MIFIT_API_URL}/questions/`
-
-/**
- * List the questions available to your institution together with the
- * patient's existing answers. Returns the full response envelope.
- *
- * GET /api/questions/?email=... | ?phone=... | ?external_id=...
- *
- * Ref: https://portal.maskfitar.com/api/docs/#tag/Questions/operation/List%20Questionnaire%20Questions
- * */
-export async function listQuestions(lookup: PatientLookup): Promise<MaskFitResponse<Question[]>> {
-    const auth = await mifitAuth()
-    const headers = { Authorization: `Bearer ${auth.access_token}` }
-
-    const params = new URLSearchParams(lookup as Record<string, string>)
-    const req = await fetch(`${MIFIT_API_QUESTIONS_URL}?${params}`, { method: "GET", headers })
-    return req.json()
-}
 
 /**
  * Submit or update a patient's answers.
